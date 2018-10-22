@@ -212,14 +212,22 @@ theorem num_even_if_num_sq_even (x : ℕ) : (even (x ^ 2) → even x) :=
             rw Hr, apply le_add_right, rw le_iff_eq_or_lt, left, refl,
     end
 
-#check lt_asymm
-#check le_or_gt
-#check mul_lt_mul
-#check ge_trans
-#check le_of_lt
-#check nat.add_sub_add_left
-#check sub_add_cancel
-#check nat.one_succ_zero
-#check sub_eq_zero
-#check le_iff_eq_or_lt
-#check @add_right_inj
+theorem fraction_is_division (numr : ℤ) (denr : ℕ) (frac : ℚ) : rat.mk numr denr = frac → ↑numr = frac * ↑denr :=
+    begin
+        sorry,
+    end
+
+theorem root2irrational (q : ℚ) : q ^ 2 ≠ 2 :=
+    begin
+        intro Hqrat,
+        rw pow_two at Hqrat,
+        rw rat.mul_num_denom q q at Hqrat,
+        have Hqrat' : ↑(q.num * q.num) = ↑2 * ↑(q.denom * q.denom),
+            apply fraction_is_division (q.num * q.num) (q.denom * q.denom) 2,
+            exact Hqrat,
+        
+        
+    end
+
+#check rat.mul_num_denom
+#check fraction_is_division
