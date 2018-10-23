@@ -12,7 +12,7 @@ inductive prf : fml → Type
 | axs (p q r) : prf $ (p →' q →' r) →' (p →' q) →' (p →' r)
 | axn (p q) : prf $ (¬'q →' ¬'p) →' p →' q
 | amp (p q) : prf (p →' (p →' q) →' q) -- internal modus ponnens, i couldn't prove it, can you?
-| acn (p q r) : prf (q →' r) → prf (p →' q) → prf (p →' r)
+| cn (p q r) : prf (q →' r) → prf (p →' q) → prf (p →' r)
 | mp (p q) : prf p → prf (p →' q) → prf q
 
 theorem reflex (P : fml) : prf (P →' P) :=
@@ -52,14 +52,14 @@ lemma yesyes (Q : fml) : prf (¬'(¬'Q) →' Q) :=
         have H1320 : prf ((¬'Q →' ¬'(¬'(¬'Q))) →' (¬'(¬'Q) →' Q)),
             apply prf.axn,
         have H4220 : prf ((¬'(¬'(¬'(¬'Q))) →' ¬'(¬'Q)) →' (¬'(¬'Q) →' Q)),
-            apply prf.acn (¬'(¬'(¬'(¬'Q))) →' ¬'(¬'Q)) ((¬'Q →' ¬'(¬'(¬'Q)))) (¬'(¬'Q) →' Q),
+            apply prf.cn (¬'(¬'(¬'(¬'Q))) →' ¬'(¬'Q)) ((¬'Q →' ¬'(¬'(¬'Q)))) (¬'(¬'Q) →' Q),
             exact H1320, exact H4213,
         have H242 : prf (¬'(¬'Q) →' ((¬'(¬'(¬'(¬'Q)))) →'(¬'(¬'Q)))),
             apply prf.axk,
         have H2020 : prf ((¬' (¬' Q) →' Q) →' (¬' (¬' Q) →' Q)),
             apply reflex,
         have H220 : prf (¬' (¬' Q) →' (¬' (¬' Q) →' Q)),
-            apply prf.acn _ ((¬'(¬'(¬'(¬'Q)))) →'(¬'(¬'Q))),
+            apply prf.cn _ ((¬'(¬'(¬'(¬'Q)))) →'(¬'(¬'Q))),
             exact H4220,
             exact H242,
         apply prf.mp (¬' (¬' Q) →' ¬' (¬' Q) →' Q),
