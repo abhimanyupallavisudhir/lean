@@ -54,16 +54,24 @@ lemma yesyes (Q : fml) : prf (¬'(¬'Q) →' Q) :=
         have H4220 : prf ((¬'(¬'(¬'(¬'Q))) →' ¬'(¬'Q)) →' (¬'(¬'Q) →' Q)),
             apply prf.acn (¬'(¬'(¬'(¬'Q))) →' ¬'(¬'Q)) ((¬'Q →' ¬'(¬'(¬'Q)))) (¬'(¬'Q) →' Q),
             exact H1320, exact H4213,
-        have H242 : prf (¬'(¬'Q) →' ((¬'(¬'(¬'(¬'Q))))→'(¬'(¬'Q)))),
+        have H242 : prf (¬'(¬'Q) →' ((¬'(¬'(¬'(¬'Q)))) →'(¬'(¬'Q)))),
             apply prf.axk,
         have H2020 : prf ((¬' (¬' Q) →' Q) →' (¬' (¬' Q) →' Q)),
             apply reflex,
         have H220 : prf (¬' (¬' Q) →' (¬' (¬' Q) →' Q)),
-            apply prf.mp,
-            sorry,
+            apply prf.acn _ ((¬'(¬'(¬'(¬'Q)))) →'(¬'(¬'Q))),
+            exact H4220,
+            exact H242,
+        apply prf.mp (¬' (¬' Q) →' ¬' (¬' Q) →' Q),
+        exact H220,
+        apply deduction,
     end
 
 theorem notnot (P : fml) : prf (P →' ¬'(¬'P)) :=
     begin
-
+        have H31 : prf (¬'(¬'(¬'P)) →' ¬' P),
+            apply yesyes,
+        apply prf.mp (¬' (¬' (¬' P)) →' ¬' P),
+        exact H31,
+        apply prf.axn,
     end
