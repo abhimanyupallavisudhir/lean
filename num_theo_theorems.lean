@@ -1,5 +1,6 @@
-import tactic.norm_num
-import tactic.ring -- not really much use, but can expand out some polynomials 
+import data.real.basic data.nat.prime data.real.irrational data.padics.padic_norm
+import tactic.norm_num tactic.ring
+local attribute [instance] nat.decidable_prime_1
 
 ------------------------------------------------
 ----------------TRIVIAL STARTERS----------------
@@ -187,47 +188,9 @@ theorem num_even_if_num_sq_even (x : ℕ) : (even (x ^ 2) → even x) :=
             apply one_not_even, rw even,
             clear Hs, --just remove if you want, nobody cares
             fapply exists.intro, exact (r - 2 * s ^ 2 - 2 * s),
-            /-calc 2 * (r - 2 * s ^ 2 - 2 * s) = 2 * (r - (2 * s ^ 2 + 2 * s)) : by rw nat.sub_sub
-                                         ... = 2 * r - 2 * ((2 * s ^ 2) + (2 * s)) : by rw nat.mul_sub_left_distrib
-                                         ... = 2 * r - (2 * (2 * s ^ 2) + 2 * (2 * s)) : by rw mul_add
-                                         ... = 2 * r - (2 * 2 * s ^ 2 + 2 * (2 * s)) : by rw ←mul_assoc
-                                         ... = 2 * r - (2 * 2 * s ^ 2 + 2 * 2 * s) : by rw ←mul_assoc
-                                         ... = 2 * r - (4 * s ^ 2 + 4 * s) : by norm_num
-                                         ... = 2 * r - (4 * s ^ (1 + 1) + 4 * s) : by rw one_add_one_eq_two
-                                         ... = 2 * r - (4 * (s ^ 1 * s) + 4 * s) : by rw nat.pow_succ
-                                         ... = 2 * r - (4 * (s * s) + 4 * s) : by rw nat.pow_one
-                                         ... = 2 * r - (4 * s * s + 4 * s) : by rw nat.mul_assoc
-                                         ... = 2 * r - (4 * s + 4) * s : by rw ←add_mul
-                                         ... = 2 * r - (4 * s + 4) * s + 1 - 1 : by rw nat.add_sub_cancel
-                                         ... = 2 * r - (4 * s + 4) * s + 1 - 1 : by rw nat.add_sub_cancel
-                                         ... = 2 * r - ((4 * s + 4) * s + 1) + 1 : by sorry
-                                         ... = 2 * r - (2 * s + 1) ^ 2 + 1 : by ring
-                                         ... = 2 * r - 2 * r + 1 : by rw Hr
-                                         ... = 0 + 1 : by rw nat.sub_self
-                                         ... = 1 : by norm_num,-/
             ring at Hr, rw add_mul at Hr,
             rw @nat.pow_two s, rw ←mul_assoc, rw nat.mul_sub_left_distrib, rw nat.mul_sub_left_distrib, rw mul_assoc, rw ←mul_assoc, norm_num, rw ←mul_assoc, rw ←mul_assoc, norm_num, rw nat.sub_sub, rw ←add_right_inj (4 * s * s + 4 * s), rw nat.sub_add_cancel, rw ←add_assoc, rw add_comm, rw add_comm 1 (4 * s * s), rw ←add_assoc, rw add_comm (4 * s) (4 *s * s),
             exact Hr,
             --we introduced a new goal in that mess above because of subtraction in ℕ
             rw Hr, apply le_add_right, rw le_iff_eq_or_lt, left, refl,
     end
-
-theorem fraction_is_division (numr : ℤ) (denr : ℕ) (frac : ℚ) : rat.mk numr denr = frac → ↑numr = frac * ↑denr :=
-    begin
-        sorry,
-    end
-
-theorem root2irrational (q : ℚ) : q ^ 2 ≠ 2 :=
-    begin
-        intro Hqrat,
-        rw pow_two at Hqrat,
-        rw rat.mul_num_denom q q at Hqrat,
-        have Hqrat' : ↑(q.num * q.num) = ↑2 * ↑(q.denom * q.denom),
-            apply fraction_is_division (q.num * q.num) (q.denom * q.denom) 2,
-            exact Hqrat,
-        
-        
-    end
-
-#check rat.mul_num_denom
-#check fraction_is_division
