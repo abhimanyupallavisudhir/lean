@@ -38,8 +38,7 @@ theorem explosion2 (P : Prop) (Q : Prop) : ¬ P → (P → Q) :=
     or.elim(classical.em Q) (λ hq, hq) (λ hnq, false.elim(hnqnp hnq hp))
 
 --Double If
-example (P : Prop) (Q : Prop) : (P → (P → Q)) → (P → Q) := 
-    begin intros HPPQ HP, apply HPPQ HP HP end
+example (P : Prop) (Q : Prop) : (P → (P → Q)) → (P → Q) := by { intros HPPQ HP, apply HPPQ HP HP }
 theorem deduction_theorem (P : Prop) (Q : Prop) : (P → (P → Q)) → (P → Q) := λ ppq p, ppq p p
 
 --Barber paradox
@@ -56,6 +55,24 @@ example ( H :  ∀ him : men, barber shaves him ↔ ¬ him shaves him ) : false 
 
 theorem barber_is_dead ( H :  ∀ him : men, barber shaves him ↔ ¬ him shaves him ) :  false  :=
     iff.dcases_on(H barber) (λ mp mpr, mp (mpr (λ a, mp a a)) (mpr (λ a, mp a a)))
+
+--Liar paradox
+theorem pants_on_fire : ¬ ∃ P : Prop, P ↔ ¬P :=
+begin
+  intro HP, cases HP with P HP, cases HP with HPnP HnPP,
+  cases classical.em P,
+  { apply HPnP h h },
+  { apply h (HnPP h) },
+end
+
+theorem pants_on_fire' : ¬ ∃ P : Prop, P ↔ ¬P :=
+  (λ HP, Exists.dcases_on HP
+    (λ P HP, iff.dcases_on HP
+      (λ HPnP HnPP,
+        or.dcases_on 
+          (classical.em P) 
+          (λ h, HPnP h h) 
+          (λ h, h (HnPP h)))))
 
 --The blue-eyed islanders puzzle
 structure tribal (day : ℕ) := mk ::
