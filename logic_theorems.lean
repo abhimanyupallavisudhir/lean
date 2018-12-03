@@ -74,7 +74,26 @@ theorem pants_on_fire' : ¬ ∃ P : Prop, P ↔ ¬P :=
           (λ h, HPnP h h) 
           (λ h, h (HnPP h)))))
 
---The blue-eyed islanders puzzle
+--Let's be constructive
+theorem thisisok (P : Prop) : ¬(¬P ∧ ¬¬P) := λ a, a.2 a.1
+
+theorem thisisuseful (P : Prop) : (¬P ∧ ¬¬P) ↔ ¬(P ∨ ¬P) := 
+begin
+  split,
+  { intros a b,
+    cases a with a1 a2,
+    cases b; { apply a2 a1 } },
+  { intro a, split,
+    { intro b, apply a, left, exact b },
+    { intro b, apply a, right, exact b } }
+end
+
+theorem thisisok' (P : Prop) : ¬¬(P ∨ ¬P) :=
+begin
+  rw ←thisisuseful, exact thisisok P,
+end
+
+/---The blue-eyed islanders puzzle
 structure tribal (day : ℕ) := mk ::
 (eye : bool)    -- brown = ff, blue = tt
 (state : bool)  -- island = tt, afterlife = ff
@@ -85,7 +104,7 @@ axiom consistency (day1 : ℕ) (day2 : ℕ) (victim_t1 : tribal day1) (victim_t2
 axiom death (today : ℕ) (victim : tribal today) (victim_tom : tribal (nat.succ(today))) : 
     victim.knows = tt → victim_tom.state = ff
 axiom life (today : ℕ) (victim : tribal today) (victim_tom : tribal (nat.succ(today))) : 
-    victim.knows = ff → victim_tom.state = tt
+    victim.knows = ff → victim_tom.state = tt-/
 
 --misc tests
 def tfae (props : list Prop)
