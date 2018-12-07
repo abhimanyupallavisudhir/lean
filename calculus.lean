@@ -149,6 +149,49 @@ begin
   existsi d, existsi hd, intros x hx, exact a''',
 end
 
+lemma tendsto_punctured_iff_tendsto (f : ℝ → ℝ) (L : ℝ)
+: tendsto_punctured (λ h, (f h) / h) L ↔ tendsto (λ h, (f h - L * h) / h) (nhds 0) (nhds 0) :=
+begin
+  split,
+  { simp only [tendsto_nhds_of_metric, dist, sub_zero],
+    intros Htp ε Hε, have Htp1 := Htp ε Hε,
+    cases Htp1 with δ Htp2, cases Htp2 with Hδ Htp3,
+    existsi δ, existsi Hδ, intros h Hhd, have Htp4 := Htp3 h,
+    cases classical.em (h = 0) with Hh0 Hh0, { simpa [Hh0] },
+    rw [sub_div, mul_div_cancel _ Hh0], apply Htp4 Hh0 Hhd },
+  { intros Ht ε Hε,
+    simp only [tendsto_nhds_of_metric, dist, sub_zero] at Ht ⊢, have Ht1 := Ht ε Hε,
+    cases Ht1 with δ Ht1, cases Ht1 with Hδ Ht2, existsi δ, existsi Hδ, 
+    intros h Hh0 Hhd, have Ht3 := Ht2 Hhd,
+    rwa [sub_div, mul_div_cancel _ Hh0] at Ht3 }
+end
+
+lemma tendsto_of_tendsto_punctured (f g : ℝ → ℝ) (L : ℝ) (Hg : g 0 = 0)
+: tendsto_punctured (λ h, (f h) / (g h)) L → tendsto (λ h, (f h - L * (g h)) / (g h)) (nhds 0) (nhds 0) :=
+begin
+  simp only [tendsto_nhds_of_metric, dist, sub_zero],
+  intros Htp ε Hε, have Htp1 := Htp ε Hε,
+  cases Htp1 with δ Htp2, cases Htp2 with Hδ Htp3,
+  existsi δ, existsi Hδ, intros h Hhd, have Htp4 := Htp3 h,
+  cases classical.em (g h = 0) with Hg0 Hg0, { simpa [Hg0] },
+  rw [sub_div, mul_div_cancel _ Hg0], apply Htp4 _ Hhd,
+  intro Hh0, apply Hg0, rwa Hh0
+end
+
+lemma tendsto_punctured_comp {f g : ℝ → ℝ} {x : ℝ} 
+: tendsto_punctured g 0 → tendsto_punctured f x → tendsto_punctured (f ∘ g) x := 
+begin
+  intros Hg Hf ε Hε,
+  have Hf1 := Hf ε Hε, cases Hf1 with δ₁ Hf2, cases Hf2 with Hδ₁ Hf3,
+  have Hg1 := Hg δ₁ Hδ₁, cases Hg1 with δ₂ Hg2, cases Hg2 with Hδ₂ Hg3,
+  existsi (min δ₁ δ₂), existsi (lt_min Hδ₁ Hδ₂), intros h Hh0 Hhd, 
+  have Hg4 := Hg3 h Hh0 (lt_min_iff.mp Hhd).2, have Hf4 := Hf3 (g h),
+  simp at Hg4,
+  cases classical.em (g h = 0) with p p,
+  { rw [function.comp_app, p], sorry },
+  { exact Hf4 p Hg4 }  
+end
+
 lemma tendsto_punctured_neg {f : ℝ → ℝ} {L : ℝ} : tendsto_punctured f L → tendsto_punctured (-f) (-L) :=
 begin
   intros Hf ε Hε, have Hf1 := Hf ε Hε, cases Hf1 with δ Hf2, cases Hf2 with Hδ Hf3, existsi δ, existsi Hδ,
@@ -452,23 +495,35 @@ theorem derivative_everywhere_const_mul' (c : ℝ) (f : ℝ → ℝ) (f' : ℝ �
 : has_derivative_everywhere f f' → has_derivative_everywhere (λ x, c * f x) (λ x, c * f' x) 
 := derivative_everywhere_const_mul _ _ _
 
+lemma derivative_h_substitution (f f' g : ℝ → ℝ) (Hg : differentiable_everywhere g)
+: has_derivative_everywhere f f' 
+→ ∀ x : ℝ, tendsto_punctured (λ h, (f (g (x + h)) - f (g x)) / (g (x + h) - g x)) (f' (g x)) := 
+begin
+  intros Hf x,
+  conv { congr, funext, rw [←add_sub_cancel'_right (g x) (g (x + h))] 
+       { occs := occurrences.pos [1] } },
+  change tendsto_punctured (((λ (H : ℝ), (f (g x + H) - f (g x)) / H)) ∘ (λ h, g (x + h) - g x)) (f' (g x)),
+  apply tendsto_punctured_comp,
+  { apply tendsto_punctured_of_tendsto _ _ (continuity_of_differentiability_everywhere _ Hg _) },
+  { rw [tendsto_punctured, ←has_derivative_at_iff_eps_del'], apply Hf }
+end
+
 theorem chain_rule (f : ℝ → ℝ) (g : ℝ → ℝ) (f' : ℝ → ℝ) (g' : ℝ → ℝ)
 : has_derivative_everywhere f f' → has_derivative_everywhere g g' 
 → has_derivative_everywhere (λ x, f (g x)) (λ x, f' (g x) * g' x) :=
 begin
   intros Hf Hg x,
-  simp [has_derivative_at],
-  
-  have convertor : (λ (h : ℝ), (-f (g x) + (f (g (x + h)) + -(f' (g x) * g' x * h))) / h) = 
-                   λ (h : ℝ), 
-                   ((f(g x + (g (x + h) - g x)) - f (g x)) / (g (x + h) - g x)) * ((g (x + h) - g x - g' x * h) / h) +
-                   ((f(g x + (g (x + h) - g x)) - f (g x)) / (g (x + h) - g x)) * ((g' x) * h / h) +
-                   (f' (g x) * (g (x + h) - g x) / (g (x + h) - g x)  - (f' (g x) * g' x * h) / (g (x + h) - g x)) * (((g (x + h) - g x - g' x * h)) / h) +
-                   (((g (x + h) - g x - g' x * h)) / h) * (f' (g x) * g' x * h) / (g (x + h) - g x),
-  sorry, sorry  
-
-
-                   
+  have convertor : (λ h, (f (g (x + h)) - f (g x)) / h) 
+                  = λ h, (((f (g (x + h)) - f (g x)) / (g (x + h) - g x)) * ((g (x + h) - g x) / h)),
+    funext, cases classical.em (g (x + h) - g x = 0) with Hh Hh,
+    { rw [Hh, zero_div, mul_zero, eq_of_sub_eq_zero Hh, sub_self, zero_div] },
+    { rw [div_mul_div_cancel], intro H0, apply Hh, rw [H0, add_zero, sub_self], exact Hh },
+  rw [has_derivative_at_iff_eps_del', ←tendsto_punctured, convertor],
+  apply tendsto_punctured_mul,
+  { apply derivative_h_substitution,
+    existsi g', exact Hg, exact Hf },
+  { rw [tendsto_punctured, ←has_derivative_at_iff_eps_del'], 
+    apply has_derivative_at_of_has_derivative_everywhere _ _ _ Hg }                
 end
 
 --Chain rule, L' Hospital
