@@ -128,6 +128,7 @@ end
 
 theorem Rsum_id_seq : Rsum id_seq = - (1 / 12) := 
 begin
-  have h1 : Rsum id_seq - 1 / 4 = 4 * Rsum id_seq,
-    rw [←Rsum_alt_id_seq], 
+  sorry -- this is not possible, because it violates the axioms. 
+        -- I should actually be able to prove there is no Ramanujan sum 
+        -- (the way I've defined it) for id_seq
 end
