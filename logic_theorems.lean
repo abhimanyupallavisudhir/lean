@@ -93,6 +93,19 @@ begin
   rw ←thisisuseful, exact thisisok P,
 end
 
+open function
+theorem invertible_of_bijective {α β : Type} (f : α → β) : bijective f → ∃ g : β → α, (g ∘ f = id ∧ f ∘ g = id) :=
+begin
+  intro bijjala,
+  cases bijjala with injjala surjjala, rw injective at injjala, rw surjective at surjjala,
+  let g : β → α := λ b, classical.some (surjjala b),
+  existsi g, split,
+  { funext, apply eq.symm(@injjala x (g (f x)) _), simp [g],
+    rw eq_comm, apply classical.some_spec (surjjala (f x)) },
+  { funext, simp [g],
+    apply classical.some_spec (surjjala x) }
+end
+
 /---The blue-eyed islanders puzzle
 structure tribal (day : ℕ) := mk ::
 (eye : bool)    -- brown = ff, blue = tt
@@ -112,3 +125,30 @@ def tfae (props : list Prop)
 
 
 --def tfae_induction (props : list Prop) (HP : ∀ i : ℕ, i < props.length - 1 → props.nth_le i (begin apply lt_of_lt_of_le a nat.sub_one_le end) )
+
+
+/-DOESN'T work, because le on nat and le on int are two different things-/
+/-I guess the idea is that almost every property one can define of a type
+  is defined within the framework of the type, and it doesn't make sense
+  to compare such a property between types.
+
+  But surely N = R should still be decidable? using cardinalities?
+  -/
+
+def F (T : Type) [has_le T] := ∃ o : T, ∀ i, i ≥ o
+lemma FN : F ℕ := Exists.intro 0 nat.zero_le
+lemma FZ : ¬ F ℤ :=
+begin
+  intro FZ,
+  cases FZ with o Ho,
+  have Ho' := Ho (o - 1),
+  apply not_le_of_gt _ Ho', 
+  rw [←sub_add_cancel o 1] {occs := occurrences.pos [1]},
+  apply lt_add_of_pos_right _ (zero_lt_one),
+end
+theorem nat_ne_int : ℕ ≠ ℤ :=
+begin
+  intro,
+  have H : F ℕ → F ℤ, sorry,
+  apply FZ (H FN),
+end
