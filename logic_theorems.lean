@@ -146,9 +146,20 @@ begin
   rw [←sub_add_cancel o 1] {occs := occurrences.pos [1]},
   apply lt_add_of_pos_right _ (zero_lt_one),
 end
+
 theorem nat_ne_int : ℕ ≠ ℤ :=
 begin
   intro,
   have H : F ℕ → F ℤ, sorry,
   apply FZ (H FN),
 end
+
+theorem natle_ne_intle : (⟨ℕ, (≤)⟩ : Σ α : Type, α → α → Prop) ≠ ⟨ℤ, (≤)⟩ :=
+begin
+  simp, intros typeq streq,
+  have fn := FN, 
+  unfold F at fn,
+  have fz : ∃ (o : ℤ), ∀ (i : ℤ), has_le.le o i := heq.rec_on streq fn,
+end
+
+#check heq
