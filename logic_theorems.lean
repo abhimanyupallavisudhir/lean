@@ -1,4 +1,23 @@
 import data.real.basic
+
+local attribute [instance, priority 0] classical.prop_decidable
+universe u
+variables {α : Sort u} (i j k : α)
+
+def equals := ∀ P : α → Sort, P i → P j
+notation i `≅` j := equals i j
+
+theorem equals_refl : i ≅ i := λ p x, x
+theorem equals_symm : (i ≅ j) → (j ≅ i) := λ a p, not_imp_not.mp (a (λ k, ¬ p k))
+theorem equals_symm' : (i ≅ j) ↔ (j ≅ i) := ⟨equals_symm i j, equals_symm j i⟩
+theorem equals_trans : (i ≅ j) → (j ≅ k) → (i ≅ k) := λ a b p x, b p (a p x)
+
+theorem equals_eq_eq : @equals α = eq := 
+by ext; exact ⟨λ a, (a (λ k, k = x) rfl).symm, λ b p x, by rwa ←b⟩
+
+theorem equals_equals_eq : equals (@equals α) eq :=
+by rw equals_eq_eq; exact equals_eq_eq
+
 --Since bananas are tasty, bananas are tasty or the Eiffel tower is in Florida.
 --But bananas are not tasty, so the Eiffel tower must be in Florida.
 example (P : Prop) (Q : Prop) (HP : P) (HnP : ¬ P) : Q :=

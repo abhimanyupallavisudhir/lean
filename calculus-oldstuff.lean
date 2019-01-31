@@ -508,7 +508,7 @@ begin
   { rw [tendsto_punctured, ←has_derivative_at_iff_eps_del'], apply Hf }
 end
 
-theorem chain_rule (f : ℝ → ℝ) (g : ℝ → ℝ) (f' : ℝ → ℝ) (g' : ℝ → ℝ)
+theorem chain_rule' (f : ℝ → ℝ) (g : ℝ → ℝ) (f' : ℝ → ℝ) (g' : ℝ → ℝ)
 : has_derivative_everywhere f f' → has_derivative_everywhere g g' 
 → has_derivative_everywhere (λ x, f (g x)) (λ x, f' (g x) * g' x) :=
 begin
@@ -582,12 +582,20 @@ theorem derivative_polynomial' (a : ℕ → ℝ) (N : ℕ) : has_derivative_ever
 begin
   induction N with n ih,
   { simp, apply derivative_constant_zero },
-  { simp,
+  { simp [finset.range_succ],
     apply derivative_everywhere_add,
     { conv { congr, skip, funext, rw [mul_comm ↑n _, mul_assoc] },
       apply derivative_everywhere_const_mul',
       apply derivative_pow },
     { exact ih } }
+end
+
+theorem derivative_exp_zero : has_derivative_at exp 0 1 :=
+begin
+  rw [has_derivative_at_iff_eps_del'],
+  intros ε hε, 
+  existsi min (abs(log (1 + ε))) (abs(log (1 - ε))),
+  
 end
 
 /-

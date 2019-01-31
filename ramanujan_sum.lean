@@ -1,6 +1,7 @@
 import data.real.basic
 import tactic.linarith
 import tactic.ring
+
 local attribute [instance, priority 0] classical.prop_decidable
 
 def seq : Type := ℕ → ℝ
@@ -15,20 +16,23 @@ notation s % k := seq_shift k s
 notation -s := seq_neg s
 notation s - t := seq_sub s t
 
-def fsum (n : ℕ) : seq → ℝ := λ s, finset.sum (finset.range (n + 1)) s
+def fsum : seq → ℕ → ℝ := λ s n, finset.sum (finset.range (n + 1)) s
+def has_gsum (s : seq) (r : ℝ) := ∀ ε > 0, ∃ N, ∀ x > N, abs (fsum s x - r) < ε
 
-noncomputable def gsum : seq → ℝ := 
-λ s, if H : ∃ L : ℝ, ∀ ε > 0, ∃ N, ∀ x > N, abs (s x - L) < ε
-then classical.some H else 0
+structure relational := (sequence : seq) (sum : ℝ)
 
-axiom Rsum : seq → ℝ
-axiom extensionality (s : seq) : gsum s ≠ 0 → Rsum s = gsum s
-axiom linearity (s t : seq) (c : ℝ) : Rsum (c * s + t) = c * Rsum s + Rsum t
-axiom stability (s : seq) : Rsum s = s 0 + Rsum (s % 1)
+constant R_summable : set relational
+axiom functional (r1 r2 : relational) (hr1 : r1 ∈ R_summable) (hr2 : r2 ∈ R_summable) 
+  : r1.sequence = r2.sequence → r1.sum = r2.sum
+axiom extensionality (s : seq) (r : ℝ) : has_gsum s r → (⟨s, r⟩ : relational) ∈ R_summable
+axiom linearity (r1 r2 : relational) (c : ℝ) (hr1 : r1 ∈ R_summable) (hr2 : r2 ∈ R_summable)
+  : (⟨c * r1.sequence + r2.sequence, c * r1.sum + r2.sum⟩ : relational) ∈ R_summable
+axiom stability (r : relational) (hr : r ∈ R_summable)
+  : (⟨r.sequence % 1, r.sum - r.sequence 0⟩ : relational) ∈ R_summable
 
 def zero_seq : seq := λ n, 0
 
-lemma fsum_succ (n : ℕ) (s : seq) : fsum (n + 1) s = fsum n s + s (n + 1) :=
+lemma fsum_succ (s : seq) (n : ℕ) : fsum s (n + 1) = fsum s n + s (n + 1) :=
 by unfold fsum; 
 rw [finset.range_succ, finset.sum_insert (finset.not_mem_range_self), add_comm]
 
@@ -45,38 +49,51 @@ by unfold seq_add; unfold zero_seq; simp
 lemma seq_one_mul (s : seq) : 1 * s = s :=
 by unfold seq_smul; simp
 
-lemma add_linearity (s t : seq) : Rsum (s + t) = Rsum s + Rsum t :=
-by rw [←seq_one_mul s, linearity, one_mul, seq_one_mul]
+lemma add_linearity (r1 r2 : relational) (hr1 : r1 ∈ R_summable) (hr2 : r2 ∈ R_summable)
+  : (⟨r1.sequence + r2.sequence, r1.sum + r2.sum⟩ : relational) ∈ R_summable := 
+by rw [←seq_one_mul r1.sequence, ←one_mul r1.sum]; apply linearity _ _ _ hr1 hr2
 
-lemma Rsum_zero_seq : Rsum zero_seq = 0 :=
-by rw [←add_self_iff_eq_zero, ←add_linearity, seq_add_zero zero_seq]
+lemma fsum_zero_seq : ∀ x : ℕ, fsum zero_seq x = 0
+| 0 := by {unfold fsum, unfold zero_seq, simp}
+| (nat.succ x) := by rw [fsum_succ, fsum_zero_seq, zero_seq, zero_add]
 
-lemma smul_linearity (s : seq) (c : ℝ) : Rsum (c * s) = c * Rsum (s) :=
-by rw [←seq_add_zero (c * s), linearity, Rsum_zero_seq];
-   rw [←add_zero (c * Rsum s)] {occs := occurrences.pos[2]}
+lemma Rsum_zero_seq : (⟨zero_seq, 0⟩ : relational) ∈ R_summable :=
+extensionality _ _ (λ ε hε, Exists.intro 0 (λ x hx, by rwa [sub_zero, fsum_zero_seq x, abs_zero]))
 
-lemma neg_linearity (s : seq) : Rsum (- s) = - Rsum s :=
+lemma smul_linearity (r : relational) (c : ℝ) (hr : r ∈ R_summable)
+  : (⟨c * r.sequence, c * r.sum⟩ : relational) ∈ R_summable :=
 begin
-  unfold seq_neg, 
-  conv {to_lhs, congr, funext, rw neg_eq_neg_one_mul},
-  rw [neg_eq_neg_one_mul (Rsum s)],
-  apply smul_linearity,
+  have h1 : zero_seq = (⟨zero_seq, 0⟩ : relational).sequence := rfl,
+  have h2 : 0 = (⟨zero_seq, 0⟩ : relational).sum := rfl,
+  rw [←seq_add_zero (c * r.sequence), ←add_zero (c * r.sum), h1, h2], 
+  apply linearity _ _ _ hr, rw [←h2], exact Rsum_zero_seq
 end
 
-lemma stability' (s : seq) (n : ℕ) (hn : n > 0) 
-: Rsum s = fsum (n - 1) s + Rsum (s % n) :=
+lemma neg_linearity (r : relational) (hr : r ∈ R_summable)
+  : (⟨-r.sequence, -r.sum⟩ : relational) ∈ R_summable :=
 begin
-  induction n with n ih,
-    exfalso, apply not_lt_iff_eq_or_lt.mpr (or.inl rfl) hn,
-  by_cases h : n = 0,
-    unfold fsum, simp [h], apply stability,
-  have ih' := ih (nat.pos_of_ne_zero h),
-  have st_local := (shift_transit s n 1).symm,
-  have se_local := shift_eval s 0 n,
-  simp [stability (s % n)] at ⊢ ih' se_local st_local,
-  rw [nat.succ_eq_add_one, st_local, ←nat.sub_add_cancel (nat.pos_of_ne_zero h), 
-    fsum_succ, nat.sub_add_cancel (nat.pos_of_ne_zero h), ih', se_local],
-  simp
+  unfold seq_neg,
+  conv {to_lhs, congr, funext, rw neg_eq_neg_one_mul, skip, rw neg_eq_neg_one_mul},
+  apply smul_linearity _ _ hr,
+end
+
+lemma stability' (r : relational) (hr : r ∈ R_summable) (n : ℕ) (hn : n > 0)
+  : (⟨r.sequence % n, r.sum - fsum r.sequence (n - 1)⟩ : relational) ∈ R_summable :=
+begin
+  induction n with k ih,
+  { exfalso, apply not_lt_iff_eq_or_lt.mpr (or.inl rfl) hn },
+  { by_cases h : k = 0,
+    unfold fsum, 
+    simp [h], apply stability _ hr,
+    have ih' := ih (nat.pos_of_ne_zero h),
+    have st_local := (shift_transit r.sequence k 1).symm,
+    have se_local := shift_eval r.sequence 0 k,
+    have sb_local := stability (⟨_, _⟩ : relational) ih',
+    simp at ih' se_local st_local sb_local ⊢, clear ih,
+    rw [←st_local, se_local, ←neg_add, add_comm (r.sequence k)] at sb_local,
+    rw [←nat.sub_add_cancel (nat.pos_of_ne_zero h)] at sb_local {occs := occurrences.pos [3]},
+    rwa [←fsum_succ, nat.sub_add_cancel (nat.pos_of_ne_zero h)] at sb_local,
+  }
 end
 
 def alt_seq : ℕ → ℝ
@@ -93,42 +110,7 @@ by unfold id_seq; rw [nat.cast_zero, zero_add]
 lemma alt_id_seq_zero : alt_id_seq 0 = 1 :=
 by unfold alt_id_seq; rw [alt_seq_zero, id_seq_zero, one_mul]
 
-theorem Rsum_alt_seq : Rsum alt_seq = 1 / 2 :=
+theorem Rsum_alt_seq : (⟨alt_seq, 1/2⟩ : relational) ∈ R_summable :=
 begin
-  have h := stability alt_seq,
-  have h1 : alt_seq % 1 = - alt_seq,
-    funext n,
-    have se_local := shift_eval alt_seq n 1, 
-    simp at se_local, simp [se_local, seq_neg, alt_seq_succ],
-  simp at h1, 
-  simp [alt_seq_zero, h1, neg_linearity, eq_add_neg_iff_add_eq, 
-        (two_mul _).symm] at h,
-  apply eq_one_div_of_mul_eq_one h,
-end
-
-theorem Rsum_alt_id_seq : Rsum alt_id_seq = 1/4 := 
-begin
-  have h := stability alt_id_seq, simp [alt_id_seq_zero] at h,
-  have hs : alt_id_seq + alt_id_seq % 1 = alt_seq % 1,
-    funext,
-    have se_local := shift_eval alt_id_seq n 1,
-    have se_local' := shift_eval alt_seq n 1,
-    simp at se_local se_local', 
-    simp [seq_add], rw [se_local, se_local'], 
-    simp [alt_id_seq, id_seq], 
-    rw [alt_seq_succ, ←neg_mul_eq_neg_mul, ←sub_eq_add_neg, 
-        ←mul_sub, ←mul_neg_one, add_sub_add_left_eq_sub, 
-        nat.cast_add, ←sub_sub, sub_self, zero_sub, nat.cast_one],
-  have s_local := stability alt_seq, simp [alt_seq_zero] at hs s_local,
-  apply eq_of_mul_eq_mul_left_of_ne_zero (by norm_num : (2 : ℝ) ≠ 0),
-  rw [(by norm_num : (2 : ℝ) * (1 / 4) = 1 / 2), ←Rsum_alt_seq, two_mul],
-  rw [h] {occs := occurrences.pos [2]},
-  rw [←add_assoc, ←add_linearity, hs, s_local],
-end
-
-theorem Rsum_id_seq : Rsum id_seq = - (1 / 12) := 
-begin
-  sorry -- this is not possible, because it violates the axioms. 
-        -- I should actually be able to prove there is no Ramanujan sum 
-        -- (the way I've defined it) for id_seq
+--never mind this is undecidable
 end
