@@ -18,6 +18,8 @@ by ext; exact ⟨λ a, (a (λ k, k = x) rfl).symm, λ b p x, by rwa ←b⟩
 theorem equals_equals_eq : equals (@equals α) eq :=
 by rw equals_eq_eq; exact equals_eq_eq
 
+theorem func_comp (f g h : α → α) : f ∘ (g ∘ h) = (f ∘ g) ∘ h := rfl
+
 --Since bananas are tasty, bananas are tasty or the Eiffel tower is in Florida.
 --But bananas are not tasty, so the Eiffel tower must be in Florida.
 example (P : Prop) (Q : Prop) (HP : P) (HnP : ¬ P) : Q :=

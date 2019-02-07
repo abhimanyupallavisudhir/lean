@@ -526,7 +526,7 @@ begin
     apply has_derivative_at_of_has_derivative_everywhere _ _ _ Hg }                
 end
 
---Chain rule, L' Hospital
+--L' Hospital
 
 -----TRIVIAL THEORMES-----
 --mean value theorem, squeeze theorem, rolle's theorem, etc.
