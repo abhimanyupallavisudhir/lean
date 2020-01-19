@@ -1,3 +1,5 @@
+-- THIS FILE IS WRONG, PLEASE SEE divergent_sums.lean
+
 import data.real.basic
 import tactic.linarith
 import tactic.ring
